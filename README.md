@@ -37,22 +37,28 @@ ECS Fargate made more sense than Vercel because it locks you into their ecosyste
 ## Repo Structure
 
 ```
-it-tools/
-├── Dockerfile                   # Multi-stage Docker build
-├── terraform/                   # Terraform modules
-│   ├── main.tf                  # Root module + OIDC/IAM
-│   ├── variables.tf / outputs.tf / provider.tf
+it-tools-ecs/
+├── app/                         # Application
+├── bootstrap/                   # setup script
+│   ├── setup.sh                 # Creates S3, ECR, OIDC, IAM role
+│   └── README.md                # Bootstrap instructions
+├── terraform/                   # Infrastructure as Code
+│   ├── main.tf                  # Root module
+│   ├── variables.tf             # Input variables
+│   ├── outputs.tf               # Output values
+│   ├── provider.tf              # AWS provider + S3 backend
 │   └── modules/
 │       ├── vpc/                 # VPC, subnets, IGW, NAT Gateway
 │       ├── alb/                 # ALB, listeners, target group, SG
-│       ├── ecs/                 # Cluster, service, task def, IAM
-│       ├── ecr/                 # Container registry
-│       └── acm/                 # SSL certificate + validation
+│       ├── ecs/                 # Cluster, service, task def, IAM, logs
+│       └── acm/                 # SSL certificate
 ├── .github/workflows/
-│   ├──docker-build.yml          # Build + push to ECR
-│   ├──terraform-deploy.yml      # Terraform apply + health check
-│   └──terraform-destroy.yml     # Manual destroy pipeline
+│   ├── docker-build.yml         # Build + Trivy scan + push to ECR
+│   ├── terraform-deploy.yml     # fmt, validate, tfsec, apply, health check
+│   └── terraform-destroy.yml    # Manual destroy pipeline
+├── Dockerfile                   # Multi-stage Docker build
 ├── architecture-it-tools.png    # Architecture diagram
+├── README.md                    # Project documentation
 └── screenshots/                 # Screenshots
 ```
 
