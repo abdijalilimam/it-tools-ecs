@@ -16,7 +16,7 @@ echo "Creating S3 state bucket..."
 aws s3api create-bucket \
   --bucket "$BUCKET_NAME" \
   --region "$AWS_REGION" \
-  --create-bucket-configuration LocationConstraint="$AWS_REGION"
+  --create-bucket-configuration LocationConstraint="$AWS_REGION" 2>/dev/null || echo "S3 bucket already exists"
 
 # Enable versioning on S3 bucket
 echo "Enabling versioning..."
