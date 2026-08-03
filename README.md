@@ -131,22 +131,22 @@ http://localhost
 
 **Docker Build and Push**
 
-![Docker Build Pipeline](screenshots/phase-7/docker-build.png)
+![Docker Build](screenshots/build.png)
 
 ---
 
 **Terraform Deploy**
 
-![Terraform Deploy Pipeline](screenshots/phase-7/terraform-deploy.png)
+![Terraform Deploy](screenshots/deploy.png)
 
 ---
 
 **Terraform Destroy**
 
-![Terraform Destroy Pipeline](screenshots/phase-7/terraform-destroy.png)
+![Terraform Destroy](screenshots/destroy.png)
 
 ---
 
 **Health Check**
 
-![Health Check Passing](screenshots/phase-7/healthcheck.png)
+![Health Check](screenshots/health.png)
