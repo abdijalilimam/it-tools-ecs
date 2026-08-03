@@ -88,6 +88,7 @@ resource "aws_ecs_task_definition" "main" {
   }])
 }
 
+
 # ECS service
 resource "aws_ecs_service" "main" {
   name            = "${var.ecs_name}-service"
