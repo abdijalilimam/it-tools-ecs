@@ -2,7 +2,7 @@
 FROM node:lts-alpine AS build-stage
 WORKDIR /app
 COPY app/package.json ./
-RUN npm install -g pnpm && pnpm i --no-frozen-lockfile
+RUN npm install -g pnpm@8 && pnpm i --no-frozen-lockfile
 COPY app/ .
 RUN pnpm build
 
