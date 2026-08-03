@@ -7,29 +7,29 @@ module "vpc" {
   availability_zone   = var.availability_zone
 }
 module "acm" {
-  source          = "./modules/acm"
+  source      = "./modules/acm"
   domain_name = var.domain_name
 }
 
 module "alb" {
   source            = "./modules/alb"
-  alb_name           = var.project_name
+  alb_name          = var.project_name
   vpc_id            = module.vpc.vpc_id
   public_subnet_ids = module.vpc.public_subnet_ids
-  certificate_arn = module.acm.certificate_arn
+  certificate_arn   = module.acm.certificate_arn
 }
 
-module "ecs" { 
-  source = "./modules/ecs" 
-  ecs_name = var.project_name 
-  vpc_id = module.vpc.vpc_id 
-  private_subnet_ids = module.vpc.private_subnet_ids 
-  container_image = var.container_image 
-  cpu = var.cpu 
-  memory = var.memory 
-  target_group_arn = module.alb.target_group_arn
+module "ecs" {
+  source                = "./modules/ecs"
+  ecs_name              = var.project_name
+  vpc_id                = module.vpc.vpc_id
+  private_subnet_ids    = module.vpc.private_subnet_ids
+  container_image       = var.container_image
+  cpu                   = var.cpu
+  memory                = var.memory
+  target_group_arn      = module.alb.target_group_arn
   alb_security_group_id = module.alb.alb_security_group_id
-  desired_count = var.desired_count
+  desired_count         = var.desired_count
 }
 
 resource "aws_route53_record" "it_tools" {
