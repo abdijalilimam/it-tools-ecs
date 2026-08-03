@@ -29,6 +29,7 @@ module "ecs" {
   memory = var.memory 
   target_group_arn = module.alb.target_group_arn
   alb_security_group_id = module.alb.alb_security_group_id
+  desired_count = var.desired_count
 }
 
 resource "aws_route53_record" "it_tools" {

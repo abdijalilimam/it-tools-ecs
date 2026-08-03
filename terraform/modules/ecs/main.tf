@@ -1,7 +1,6 @@
-#iam role. this is like a job title without responsibilities 
+# IAM role - job title without responsibilities
 resource "aws_iam_role" "ecs_execution" {
   name = "${var.ecs_name}-execution-role"
-
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -14,45 +13,55 @@ resource "aws_iam_role" "ecs_execution" {
   })
 }
 
-#execution role. this is the job describtion of the job title 
+# Execution role - job description attached to job title
 resource "aws_iam_role_policy_attachment" "ecs_execution" {
   role       = aws_iam_role.ecs_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+# CloudWatch log group for container logs
+resource "aws_cloudwatch_log_group" "ecs" {
+  name              = "/ecs/${var.ecs_name}"
+  retention_in_days = 7
 
-#aws ecs cluster 
+  tags = {
+    Name = "${var.ecs_name}-logs"
+  }
+}
+
+# ECS cluster
 resource "aws_ecs_cluster" "main" {
   name = var.ecs_name
-  
+
   tags = {
     Name = var.ecs_name
   }
 }
 
-#security group
+# Security group for ECS tasks
 resource "aws_security_group" "ecs" {
   name   = "${var.ecs_name}-ecs-sg"
   vpc_id = var.vpc_id
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-security_groups = [var.alb_security_group_id]
-  }
-  
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+
   tags = {
     Name = "${var.ecs_name}-ecs-sg"
   }
 }
 
-#task definition
+resource "aws_vpc_security_group_ingress_rule" "ecs_ingress" {
+  security_group_id            = aws_security_group.ecs.id
+  from_port                    = 80
+  to_port                      = 80
+  ip_protocol                  = "tcp"
+  referenced_security_group_id = var.alb_security_group_id
+}
+
+resource "aws_vpc_security_group_egress_rule" "ecs_egress" {
+  security_group_id = aws_security_group.ecs.id
+  ip_protocol       = "-1"
+  cidr_ipv4         = "0.0.0.0/0"
+}
+# Task definition
 resource "aws_ecs_task_definition" "main" {
   family                   = "${var.ecs_name}-task"
   requires_compatibilities = ["FARGATE"]
@@ -60,6 +69,7 @@ resource "aws_ecs_task_definition" "main" {
   cpu                      = var.cpu
   memory                   = var.memory
   execution_role_arn       = aws_iam_role.ecs_execution.arn
+
   container_definitions = jsonencode([{
     name  = var.ecs_name
     image = var.container_image
@@ -67,22 +77,31 @@ resource "aws_ecs_task_definition" "main" {
       containerPort = 80
       protocol      = "tcp"
     }]
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = "/ecs/${var.ecs_name}"
+        "awslogs-region"        = "us-east-2"
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
   }])
 }
 
-
-#ecs service
+# ECS service
 resource "aws_ecs_service" "main" {
   name            = "${var.ecs_name}-service"
   cluster         = aws_ecs_cluster.main.name
   task_definition = aws_ecs_task_definition.main.arn
-  desired_count   = 1
+  desired_count   = var.desired_count
   launch_type     = "FARGATE"
+
   network_configuration {
     subnets          = var.private_subnet_ids
     security_groups  = [aws_security_group.ecs.id]
     assign_public_ip = false
   }
+  
   load_balancer {
     target_group_arn = var.target_group_arn
     container_name   = var.ecs_name

@@ -28,6 +28,12 @@ description = "How much memory"
 type = string 
 }
 
+variable "desired_count" {
+  description = "Number of ECS tasks to run"
+  type        = number
+  default     = 1
+}
+
 variable "target_group_arn" { 
 description = "The target group that is in" 
 type = string

@@ -1,5 +1,5 @@
-#terraform deploy
 name: Terraform Deploy
+
 on:
   workflow_run:
     workflows: ["Docker Build and Push"]
@@ -20,7 +20,7 @@ jobs:
       contents: read
 
     steps:
-    - name: checkout code 
+    - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Configure AWS credentials
@@ -38,13 +38,27 @@ jobs:
       working-directory: ${{ env.TF_DIR }}
       run: terraform init
 
-    - name: Terraform plan
+    - name: Terraform Format Check
       working-directory: ${{ env.TF_DIR }}
-      run: terraform plan -var="container_image=305476115260.dkr.ecr.us-east-2.amazonaws.com/it-tools:${{ github.sha }}"
+      run: terraform fmt -check -recursive
 
-    - name: Terraform apply
+    - name: Terraform Validate
       working-directory: ${{ env.TF_DIR }}
-      run: terraform apply -auto-approve -var="container_image=305476115260.dkr.ecr.us-east-2.amazonaws.com/it-tools:${{ github.sha }}"
+      run: terraform validate
+
+    - name: Run tfsec
+      uses: aquasecurity/tfsec-action@v1.0.0
+      with:
+        working_directory: ${{ env.TF_DIR }}
+        soft_fail: true
+
+    - name: Terraform Plan
+      working-directory: ${{ env.TF_DIR }}
+      run: terraform plan -var="container_image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/it-tools:${{ github.sha }}"
+
+    - name: Terraform Apply
+      working-directory: ${{ env.TF_DIR }}
+      run: terraform apply -auto-approve -var="container_image=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/it-tools:${{ github.sha }}"
 
     - name: Health Check
       run: |
