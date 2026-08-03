@@ -3,9 +3,9 @@ FROM node:lts-alpine AS build-stage
 
 WORKDIR /app
 
-COPY app/package.json app/pnpm-lock.yaml ./
+COPY app/package.json ./
 
-RUN npm install -g pnpm && pnpm i --no-frozen-lockfile
+RUN npm install -g pnpm && pnpm install
 
 COPY app/ .
 
