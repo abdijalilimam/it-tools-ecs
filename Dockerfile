@@ -4,7 +4,7 @@ WORKDIR /app
 COPY app/package.json app/pnpm-lock.yaml ./
 RUN npm install -g pnpm@9 && pnpm i --frozen-lockfile
 COPY app/ .
-RUN pnpm build
+RUN npx vite build
 
 # STAGE 2 - Production
 FROM nginx:stable-alpine AS production
