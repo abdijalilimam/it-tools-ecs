@@ -1,133 +1,146 @@
-<picture>
-    <source srcset="./.github/logo-dark.png" media="(prefers-color-scheme: light)">
-    <source srcset="./.github/logo-white.png" media="(prefers-color-scheme: dark)">
-    <img src="./.github/logo-dark.png" alt="logo">
-</picture>
+# IT Tools — Production Deployment on AWS
 
-<p align="center">
-Useful tools for developer and people working in IT. <a href="https://it-tools.tech">Try it!</a>
-</p>
+A production deployment of [it-tools](https://github.com/CorentinTh/it-tools) a handy collection of developer utilities. containerised with Docker and deployed to AWS ECS Fargate using Terraform, with a fully automated CI/CD pipeline via GitHub Actions.
 
-## Functionalities and roadmap
+**Live at: https://it-tools.abdijalil.dev**
 
-Please check the [issues](https://github.com/CorentinTh/it-tools/issues) to see if some feature listed to be implemented.
+---
+## Overview
 
-You have an idea of a tool? Submit a [feature request](https://github.com/CorentinTh/it-tools/issues/new/choose)!
+it-tools is an open-source collection of utility tools built for developers. It's built with Vue and TypeScript, compiles down to static files, and is served by nginx with no backend or database. I picked it because it's the kind of app that looks simple on the surface but actually needed real infrastructure to run properly — a multi-stage Docker build, a proper web server, HTTPS, and a deployment pipeline. That gap between how simple the app is and how much work the infrastructure requires is exactly what made it a good target for me.
 
-## Self host
+ECS Fargate made more sense than Vercel because it locks you into their ecosystem, providing no ability to troubleshoot when a deployment fails. A VM was not even considered because you end up spending more time patching and managing the OS than actually building infrastructure. Fargate sits in the right spot — AWS handles the compute, and you still have full control over the networking, security, and scaling. It integrates natively with ECR, ALB, and IAM, supports multi-AZ deployments, and scales horizontally just by increasing the desired task count. The whole thing started with manually clicking through the AWS Console to understand each service, then got rebuilt in Terraform and automated with GitHub Actions.
 
-Self host solutions for your homelab
+---
 
-**From docker hub:**
+## Architecture
 
-```sh
-docker run -d --name it-tools --restart unless-stopped -p 8080:80 corentinth/it-tools:latest
+![Architecture Diagram](architecture-it-tools.png)
+
+## Tech Stack
+
+| Category | Tool |
+|----------|------|
+| App | it-tools (Vue / TypeScript) |
+| Container | Docker, nginx:stable-alpine (multi-stage build) |
+| Registry | AWS ECR |
+| Infrastructure | Terraform (modular) |
+| Compute | AWS ECS Fargate |
+| Networking | VPC, ALB, NAT Gateway, 2 AZs |
+| DNS | Route 53 + Namecheap |
+| HTTPS | AWS ACM (wildcard cert) |
+| CI/CD | GitHub Actions + OIDC |
+| State | Terraform remote state in S3 |
+
+---
+
+## Repo Structure
+
+```
+it-tools/
+├── Dockerfile                   # Multi-stage Docker build
+├── terraform/                   # Terraform modules
+│   ├── main.tf                  # Root module + OIDC/IAM
+│   ├── variables.tf / outputs.tf / provider.tf
+│   └── modules/
+│       ├── vpc/                 # VPC, subnets, IGW, NAT Gateway
+│       ├── alb/                 # ALB, listeners, target group, SG
+│       ├── ecs/                 # Cluster, service, task def, IAM
+│       ├── ecr/                 # Container registry
+│       └── acm/                 # SSL certificate + validation
+├── .github/workflows/
+│   ├──docker-build.yml          # Build + push to ECR
+│   ├──terraform-deploy.yml      # Terraform apply + health check
+│   └──terraform-destroy.yml     # Manual destroy pipeline
+├── architecture-it-tools.png    # Architecture diagram
+└── screenshots/                 # Screenshots
 ```
 
-**From github packages:**
+---
 
-```sh
-docker run -d --name it-tools --restart unless-stopped -p 8080:80 ghcr.io/corentinth/it-tools:latest
-```
+## Local Setup
 
-**Other solutions:**
+### Prerequisites
 
-- [Cloudron](https://www.cloudron.io/store/tech.ittools.cloudron.html)
-- [Tipi](https://www.runtipi.io/docs/apps-available)
-- [Unraid](https://unraid.net/community/apps?q=it-tools)
+- Node.js
+- pnpm
+- Docker
 
-## Contribute
+### Run the application
 
-### Recommended IDE Setup
+Install dependencies and start the development server:
 
-[VSCode](https://code.visualstudio.com/) with the following extensions:
-
-- [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur)
-- [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
-- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-- [i18n Ally](https://marketplace.visualstudio.com/items?itemName=lokalise.i18n-ally)
-
-with the following settings:
-
-```json
-{
-  "editor.formatOnSave": false,
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
-  },
-  "i18n-ally.localesPaths": ["locales", "src/tools/*/locales"],
-  "i18n-ally.keystyle": "nested"
-}
-```
-
-### Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
-
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
-
-1. Disable the built-in TypeScript Extension
-   1. Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-   2. Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
-
-### Project Setup
-
-```sh
+```bash
 pnpm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+The application will be available at:
 
-```sh
-pnpm build
+```
+http://localhost:5173
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+### Run with Docker
 
-```sh
-pnpm test
+Build the production image:
+
+```bash
+docker build --platform linux/amd64 -t it-tools:local .
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+Run the container:
 
-```sh
-pnpm lint
+```bash
+docker run -p 80:80 it-tools:local
 ```
 
-### Create a new tool
+Then open:
 
-To create a new tool, there is a script that generate the boilerplate of the new tool, simply run:
-
-```sh
-pnpm run script:create:tool my-tool-name
+```
+http://localhost
 ```
 
-It will create a directory in `src/tools` with the correct files, and a the import in `src/tools/index.ts`. You will just need to add the imported tool in the proper category and develop the tool.
+## Issues I ran into 
 
-## Contributors
+**ARM vs AMD64** — images built on Apple Silicon are incompatible with ECS Fargate by default. Fixed with `--platform linux/amd64`.
 
-Big thanks to all the people who have already contributed!
+**Terraform state in CI/CD** — GitHub Actions runners start fresh with no local state. Moving state to S3 solved this.
 
-[![contributors](https://contrib.rocks/image?repo=corentinth/it-tools&refresh=1)](https://github.com/corentinth/it-tools/graphs/contributors)
+**OIDC setup** — trust policy conditions have to be exactly right (`repo:abdijalilimam/it-tools:*`). Small mistakes here cause  auth failures.
 
-## Credits
+**DNS automation** — Initially used Cloudflare for DNS which required manually updating the CNAME record after every deploy since Cloudflare Registrar doesn't allow external nameservers. I solved by purchasing `abdijalil.dev` through Namecheap, pointing nameservers to Route 53, and adding an `aws_route53_record` resource to Terraform so DNS updates automatically after every `terraform apply`.
 
-Coded with ❤️ by [Corentin Thomasset](https://corentin.tech?utm_source=it-tools&utm_medium=readme).
+**Resource conflicts** — repeated terraform destroy/apply cycles caused "resource already exists" errors. Fixed with `terraform import`.
 
-This project is continuously deployed using [vercel.com](https://vercel.com).
+---
 
-Contributor graph is generated using [contrib.rocks](https://contrib.rocks/preview?repo=corentinth/it-tools).
+## App Demo
 
-<a href="https://www.producthunt.com/posts/it-tools?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-it&#0045;tools" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=345793&theme=light" alt="IT&#0032;Tools - Collection&#0032;of&#0032;handy&#0032;online&#0032;tools&#0032;for&#0032;devs&#0044;&#0032;with&#0032;great&#0032;UX | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-<a href="https://www.producthunt.com/posts/it-tools?utm_source=badge-top-post-badge&utm_medium=badge&utm_souce=badge-it&#0045;tools" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/top-post-badge.svg?post_id=345793&theme=light&period=daily" alt="IT&#0032;Tools - Collection&#0032;of&#0032;handy&#0032;online&#0032;tools&#0032;for&#0032;devs&#0044;&#0032;with&#0032;great&#0032;UX | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+![App running with HTTPS](screenshots/phase-7/app.png)
 
-## License
+---
 
-This project is under the [GNU GPLv3](LICENSE).
+## Pipeline Screenshots
+
+**Docker Build and Push**
+
+![Docker Build Pipeline](screenshots/phase-7/docker-build.png)
+
+---
+
+**Terraform Deploy**
+
+![Terraform Deploy Pipeline](screenshots/phase-7/terraform-deploy.png)
+
+---
+
+**Terraform Destroy**
+
+![Terraform Destroy Pipeline](screenshots/phase-7/terraform-destroy.png)
+
+---
+
+**Health Check**
+
+![Health Check Passing](screenshots/phase-7/healthcheck.png)
