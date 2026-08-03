@@ -1,8 +1,8 @@
 # STAGE 1 - Build
 FROM node:lts-alpine AS build-stage
 WORKDIR /app
-COPY app/package.json app/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm i --frozen-lockfile
+COPY app/package.json ./
+RUN npm install -g pnpm && pnpm i --no-frozen-lockfile
 COPY app/ .
 RUN pnpm build
 
